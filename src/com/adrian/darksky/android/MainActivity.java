@@ -1,57 +1,112 @@
 package com.adrian.darksky.android;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.text.SimpleDateFormat;
-import java.util.Date;
-import java.util.Locale;
+import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
 
-import org.apache.http.HttpResponse;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.HttpClient;
-import org.apache.http.client.methods.HttpGet;
-import org.apache.http.impl.client.DefaultHttpClient;
+import org.achartengine.GraphicalView;
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
+import android.app.Activity;
+import android.os.Bundle;
+import android.util.Log;
+import android.view.Menu;
+import android.view.View;
+import android.view.ViewGroup;
+import android.view.ViewGroup.LayoutParams;
+import android.widget.FrameLayout;
+import android.widget.LinearLayout;
+import android.widget.TextView;
+
 import com.littlefluffytoys.littlefluffylocationlibrary.LocationInfo;
 import com.littlefluffytoys.littlefluffylocationlibrary.LocationLibrary;
-
-import android.location.LocationManager;
-import android.os.AsyncTask;
-import android.os.Bundle;
-import android.app.Activity;
-import android.app.Service;
-import android.view.Menu;
-import android.widget.TextView;
 
 public class MainActivity extends Activity {
 	
 	public static String DARK_SKY_API_KEY = "e80103b48665176f4f4c1a9a26172539";
-	private static final ThreadLocal<SimpleDateFormat> displayFormat = new ThreadLocal<SimpleDateFormat>() {
-		SimpleDateFormat dateFormat = new SimpleDateFormat("MM/dd/yy hh:mm", Locale.US);
-		@Override
-		public SimpleDateFormat get() {
-			return dateFormat;
-		}
-	};
+
+	private final boolean SHOW_VALS = false;
 	
-	LocationManager locationManager;
+	private TreeMap<Long, String> hourTimeToProb = new TreeMap<Long, String>();
+
+	private DarkSkyChartFactory darkSkyDayChart = new DarkSkyChartFactory(this, new LayoutParams(LayoutParams.WRAP_CONTENT, 200), "Day");
+	private DarkSkyChartFactory darkSkyHourChart = new DarkSkyChartFactory(this, new LayoutParams(LayoutParams.WRAP_CONTENT, 200), "Hour");
+
+	private JSONObject currentDarkSkyData;
 	
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-        setContentView(R.layout.activity_main);
-        
-        locationManager = (LocationManager) this.getSystemService(Service.LOCATION_SERVICE);
+    }
+    
+    @Override
+    protected void onResume() {
+    	super.onResume();
+    	
+    	newDarkSkyData();
+    }
+    
+    private void newDarkSkyData(){
+    	View reg = getLayoutInflater().inflate(R.layout.activity_main, null);
+    	
+    	LocationInfo currentLocationInfo = initLocation();
+    	currentDarkSkyData = loadData(currentLocationInfo);
+    	
+		LinearLayout layout = (LinearLayout) reg.findViewById(R.id.regular);
+		layout.removeAllViews();
+		
+		try {
+			TreeMap<Long, String> dayTimeToProb = generateDayPrecipData(currentDarkSkyData);
+			layout.addView(darkSkyDayChart.getChart(dayTimeToProb));
+		} catch (JSONException e) {
+			Log.e("com.adrian.darksky.android.MainActivity", "JSON RESPONSE HAS CHANGED, CAN'T GENERATE GRAPHS");
+		}
+		try {
+			TreeMap<Long, String> hourTimeToProb = generateHourPrecipData(currentDarkSkyData);
+			layout.addView(darkSkyDayChart.getChart(hourTimeToProb));
+		} catch (JSONException e) {
+			Log.e("com.adrian.darksky.android.MainActivity", "JSON RESPONSE HAS CHANGED, CAN'T GENERATE GRAPHS");
+		}
+		
+		setContentView(reg);
+		
+		TextView daySummaryTextView = (TextView) this.findViewById(R.id.daySummary);
+		try {
+			daySummaryTextView.setText(currentDarkSkyData.getString(DarkSkyField.DAY_SUMMARY.toString()));
+		} catch (JSONException e) {
+			Log.e("com.adrian.darksky.android.MainActivity", "JSON RESPONSE HAS CHANGED, COULDN'T MAKE CALL");
+		}
+		
+    }
+    
+    private LocationInfo initLocation() {
+    	//location library initializer
         LocationLibrary.initialiseLibrary(getBaseContext(), "com.adrian.darksky.android");
         LocationLibrary.forceLocationUpdate(getBaseContext());
-        
-        LocationInfo latestInfo = new LocationInfo(getBaseContext());
-
-        loadData(latestInfo.lastLat, latestInfo.lastLong);
+        return new LocationInfo(getBaseContext());
+	}
+    
+    private static TreeMap<Long, String> generateDayPrecipData(JSONObject darkSkyData) throws JSONException{
+    	TreeMap<Long, String> ret = new TreeMap<Long, String>();
+    	JSONArray dayPrecipData = darkSkyData.getJSONArray(DarkSkyField.DAY_PRECIPITATION.toString());
+		for(int i = 0; i < dayPrecipData.length(); i++){
+			Long curTime = Long.parseLong(dayPrecipData.getJSONObject(i).getString("time")) * 1000;
+			String curProbability = dayPrecipData.getJSONObject(i).getString("probability");
+			ret.put(curTime, curProbability);
+		}
+		return  ret;
+    }
+    
+    private static TreeMap<Long, String> generateHourPrecipData(JSONObject darkSkyData) throws JSONException{
+    	TreeMap<Long, String> ret = new TreeMap<Long, String>();
+    	JSONArray dayPrecipData = darkSkyData.getJSONArray(DarkSkyField.HOUR_PRECIPITATION.toString());
+		for(int i = 0; i < dayPrecipData.length(); i++){
+			Long curTime = Long.parseLong(dayPrecipData.getJSONObject(i).getString("time")) * 1000;
+			String curProbability = dayPrecipData.getJSONObject(i).getString("probability");
+			ret.put(curTime, curProbability);
+		}
+		return  ret;
     }
     
     @Override
@@ -60,66 +115,42 @@ public class MainActivity extends Activity {
         return true;
     }
 
-    public void loadData(float latitude, float longitude){
-    	
-    	TextView textView = (TextView) findViewById(R.id.textview);
-    	
+    private JSONObject loadData(LocationInfo locationInfo){
     	String darkSkyText = "";
 		try {
-			darkSkyText = new GetDarkSkyInfoTask().execute(latitude, longitude).get();
+			darkSkyText = new GetDarkSkyInfoTask().execute(locationInfo.lastLat, locationInfo.lastLong).get();
 		} catch (InterruptedException e) {
 			e.printStackTrace();
 		} catch (ExecutionException e) {
 			e.printStackTrace();
 		}
     	
-		StringBuffer outputText = new StringBuffer( "Lat: " + latitude + " | Long: " + longitude + "\n");
-		JSONObject darkSkyData = null;
 		try {
-			darkSkyData = new JSONObject(darkSkyText);
-			JSONArray precipData = darkSkyData.getJSONArray("dayPrecipitation");
+			JSONObject darkSkyData = new JSONObject(darkSkyText);
+			JSONArray hourPrecipData = darkSkyData.getJSONArray(DarkSkyField.HOUR_PRECIPITATION.toString());
 			
-			for(int i = 0; i < precipData.length(); i++){
-				Long curTime = Long.parseLong(precipData.getJSONObject(i).getString("time")) * 1000;
-				String curProbability = precipData.getJSONObject(i).getString("probability");
-				outputText.append(displayFormat.get().format( new Date(curTime)) + " : " + curProbability + "\n");
+			for (int i = 0; i < hourPrecipData.length(); i++) {
+				Long curTime = Long.parseLong(hourPrecipData.getJSONObject(i).getString("time")) * 1000;
+				String curProbability = hourPrecipData.getJSONObject(i).getString("probability");
+				hourTimeToProb.put(curTime, curProbability);
 			}
 			
+			if(SHOW_VALS){
+				Log.d("com.adrian.darksky.android.MainActivity", darkSkyData.getString(DarkSkyField.CURRENT_SUMMARY.toString()));
+				Log.d("com.adrian.darksky.android.MainActivity", darkSkyData.getString(DarkSkyField.CURRENT_TEMP.toString()));
+				Log.d("com.adrian.darksky.android.MainActivity", darkSkyData.getString(DarkSkyField.DAY_SUMMARY.toString()));
+				Log.d("com.adrian.darksky.android.MainActivity", darkSkyData.getString(DarkSkyField.MINUTES_UNTIL_CHANGE.toString()));
+				Log.d("com.adrian.darksky.android.MainActivity", darkSkyData.getString(DarkSkyField.RADAR_STATION.toString()));
+				Log.d("com.adrian.darksky.android.MainActivity", darkSkyData.getString(DarkSkyField.HOUR_SUMMARY.toString()));
+				Log.d("com.adrian.darksky.android.MainActivity", darkSkyData.getString(DarkSkyField.CHECK_TIMEOUT.toString()));
+				Log.d("com.adrian.darksky.android.MainActivity", String.valueOf(darkSkyData.getBoolean(DarkSkyField.IS_PRECIPITATING.toString())));
+			}
+			
+			return darkSkyData;
 			
 		} catch (JSONException e) {
 			e.printStackTrace();
 		}
-		
-    	textView.setText( outputText );
-    	
+		return null;
     }
-    
-    public class GetDarkSkyInfoTask extends AsyncTask<Float, Integer, String>{
-		@Override
-		protected String doInBackground(Float... params) {
-			float latitude = params[0];
-			float longitude = params[1];
-			
-		   	HttpClient client = new DefaultHttpClient();
-	    	ByteArrayOutputStream baos = new ByteArrayOutputStream();
-	    	try {
-				HttpResponse response = client.execute(new HttpGet(getLocationURL(latitude, longitude)));
-				response.getEntity().writeTo(baos);
-				baos.close();
-			} catch (ClientProtocolException e) {
-				e.printStackTrace();
-			} catch (IOException e) {
-				e.printStackTrace();
-			}			
-			
-			// TODO Auto-generated method stub
-			return baos.toString();
-		}
-    	
-    }
-    
-    public String getLocationURL(float latitude, float longitude){
-    	return "https://api.darkskyapp.com/v1/forecast/" + DARK_SKY_API_KEY + "/" + latitude + "," + longitude;
-    }
-    
 }
