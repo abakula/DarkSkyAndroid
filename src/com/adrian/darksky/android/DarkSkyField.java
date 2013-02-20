@@ -1,22 +1,24 @@
 package com.adrian.darksky.android;
 
 public enum DarkSkyField {
-	IS_PRECIPITATING("isPrecipitating"),
-	MINUTES_UNTIL_CHANGE("minutesUntilChange"),
-	CURRENT_SUMMARY("currentSummary"),
+	HOUR_PRECIPITATION("hourPrecipitation"),
+	DAY_PRECIPITATION("dayPrecipitation"),
+	
 	HOUR_SUMMARY("hourSummary"),
 	DAY_SUMMARY("daySummary"),
+	CURRENT_SUMMARY("currentSummary"),
+	
+	IS_PRECIPITATING("isPrecipitating"),
+	MINUTES_UNTIL_CHANGE("minutesUntilChange"),
 	CURRENT_TEMP("currentTemp"),
 	TIMEZONE("timezone"),
 	CHECK_TIMEOUT("checkTimeout"),
 	RADAR_STATION("radarStation"),
-	HOUR_PRECIPITATION("hourPrecipitation"),
-	DAY_PRECIPITATION("dayPrecipitation"),
 	PROBABILITY("probability"),
 	INTENSITY("intensity"),
 	ERROR("error"),
-	TYPE("type"),
 	TEMP("temp"),
+	TYPE("type"),
 	TIME("time");
 	
 	private String fieldName;
