@@ -1,21 +1,14 @@
 package com.adrian.darksky.android;
 
-import java.util.TreeMap;
 import java.util.concurrent.ExecutionException;
 
-import org.achartengine.GraphicalView;
-import org.json.JSONArray;
-import org.json.JSONException;
 import org.json.JSONObject;
 
 import android.app.Activity;
 import android.os.Bundle;
-import android.util.Log;
 import android.view.Menu;
 import android.view.View;
-import android.view.ViewGroup;
 import android.view.ViewGroup.LayoutParams;
-import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 import android.widget.TextView;
 
@@ -36,6 +29,9 @@ public class MainActivity extends Activity {
     @Override
     public void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        
+        LocationLibrary.initialiseLibrary(getBaseContext(), "com.adrian.darksky.android");
+        
     }
     
     @Override
@@ -70,7 +66,6 @@ public class MainActivity extends Activity {
     
     private LocationInfo initLocation() {
     	//location library initializer
-        LocationLibrary.initialiseLibrary(getBaseContext(), "com.adrian.darksky.android");
         LocationLibrary.forceLocationUpdate(getBaseContext());
         return new LocationInfo(getBaseContext());
 	}

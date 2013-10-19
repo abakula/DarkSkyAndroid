@@ -11,7 +11,7 @@ public class DarkSkyDaydream extends DreamService {
 	public void onDreamingStarted() {
 		super.onDreamingStarted();
 		
-		
+		setContentView(R.layout.daydream);
 	}
 	
 	
