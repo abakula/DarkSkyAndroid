@@ -6,15 +6,17 @@
     <uses-permission android:name="android.permission.ACCESS_FINE_LOCATION"/>
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.RECEIVE_BOOT_COMPLETE"/>
-        
+    <uses-permission android:name="android.permission.ACCESS_MOCK_LOCATION"/>    
+    
     <uses-sdk
         android:minSdkVersion="8"
-        android:targetSdkVersion="15" />
+        android:targetSdkVersion="18" />
 
     <application
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
-        android:theme="@style/AppTheme" >
+        android:theme="@style/AppTheme" 
+        android:allowBackup="true">
         
         <!-- Little fluffy toys location library -->
         <service android:name="com.littlefluffytoys.littlefluffylocationlibrary.LocationBroadcastService" />
@@ -23,6 +25,7 @@
 	        <action android:name="android.intent.action.BOOT_COMPLETED" />  
 	      </intent-filter>  
 	    </receiver>
+	    <receiver android:name="com.littlefluffytoys.littlefluffylocationlibrary.PassiveLocationChangedReceiver" android:exported="true" />
         <!-- Little fluffy toys location library END -->
         
         <activity android:name=".MainActivity" android:label="@string/title_activity_main" android:hardwareAccelerated="false">

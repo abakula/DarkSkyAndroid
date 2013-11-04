@@ -10,39 +10,36 @@ import org.apache.http.client.methods.HttpGet;
 import org.apache.http.impl.client.DefaultHttpClient;
 
 import android.os.AsyncTask;
+import android.util.Log;
 
-public class GetDarkSkyInfoTask extends AsyncTask<Float, Integer, String> {
-	public static String DARK_SKY_API_KEY = MainActivity.DARK_SKY_API_KEY;
+import com.littlefluffytoys.littlefluffylocationlibrary.LocationInfo;
+
+public class GetDarkSkyInfoTask extends AsyncTask<LocationInfo, Integer, String> {
+	public static String DARK_SKY_API_KEY = "e80103b48665176f4f4c1a9a26172539";
 	
-	private enum API_CALL{
+	public enum API_CALL_TYPE{
 		FORECAST("forecast"),
 		BRIEF_FORECAST("brief_forecast");
 		
 		private String request;
-		
-		private API_CALL(String request) {
+		private API_CALL_TYPE(String request) {
 			this.request = request;
 		}
-		
 		public String toString(){
 			return request;
 		}
 	}
 	
-	private API_CALL call = API_CALL.FORECAST; 
+	private API_CALL_TYPE call = API_CALL_TYPE.FORECAST; 
 	
-	public GetDarkSkyInfoTask(){
-	}
-	
-	public GetDarkSkyInfoTask(boolean brief) {
-		if(brief)
-			call = API_CALL.BRIEF_FORECAST;
+	public GetDarkSkyInfoTask(API_CALL_TYPE callType) {
+		call = callType;
 	}
 
 	@Override
-	protected String doInBackground(Float... params) {
-		float latitude = params[0];
-		float longitude = params[1];
+	protected String doInBackground(LocationInfo... params) {
+		float latitude = params[0].lastLat;
+		float longitude = params[0].lastLong;
 		
 	   	HttpClient client = new DefaultHttpClient();
     	ByteArrayOutputStream baos = new ByteArrayOutputStream();
@@ -56,11 +53,11 @@ public class GetDarkSkyInfoTask extends AsyncTask<Float, Integer, String> {
 			e.printStackTrace();
 		}			
 		
-		// TODO Auto-generated method stub
 		return baos.toString();
 	}
 	
 	private String getLocationURL(float latitude, float longitude){
+		Log.i("Api Call: ", "https://api.darkskyapp.com/v1/" + call.toString() + "/" + DARK_SKY_API_KEY + "/" + latitude + "," + longitude);
     	return "https://api.darkskyapp.com/v1/" + call.toString() + "/" + DARK_SKY_API_KEY + "/" + latitude + "," + longitude;
     }
 }

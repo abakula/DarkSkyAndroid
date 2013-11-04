@@ -5,6 +5,7 @@
     android:layout_height="fill_parent"
     >
     <TextView
+        android:id="@+id/daydream_textview"
         android:layout_width="fill_parent"
         android:layout_height="fill_parent"
         android:layout_centerInParent="true"

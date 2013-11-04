@@ -14,12 +14,7 @@ public enum DarkSkyField {
 	TIMEZONE("timezone"),
 	CHECK_TIMEOUT("checkTimeout"),
 	RADAR_STATION("radarStation"),
-	PROBABILITY("probability"),
-	INTENSITY("intensity"),
-	ERROR("error"),
-	TEMP("temp"),
-	TYPE("type"),
-	TIME("time");
+	INTENSITY("currentIntensity");
 	
 	private String fieldName;
 	
